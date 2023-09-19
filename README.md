@@ -3,7 +3,12 @@
 Yet another [Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
 
 ```bash
-$ pip install -r requirements.txt
+$ make install-package
+$ gol
+```
 
-$ python src/gol/core.py
+For command line arguments see:
+
+```
+$ gol --help
 ```

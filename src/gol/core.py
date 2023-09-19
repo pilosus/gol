@@ -1,12 +1,16 @@
+import os
+import sys
+import time
+import typing
+
+import click
 import colorama
 import numpy as np
 import numpy.typing as npt
-import os
-import time
-import sys
 
 # Types
-Board = npt.NDArray[np.int64]
+Board = npt.NDArray[np.float64]
+
 
 class GameOfLife:
     def __init__(self, rows: int = 30, cols: int = 30) -> None:
@@ -16,9 +20,8 @@ class GameOfLife:
         self.iteration = 0
 
     def seed(self) -> None:
-        """Initialize some patterns
-        """
-        
+        """Initialize some patterns"""
+
         # Still lifes - don't change over time
         ## Block
         self.board[1:3, 1:3] = 1
@@ -36,7 +39,7 @@ class GameOfLife:
         ## Toad
         self.board[7, 7:10] = 1
         self.board[6, 8:11] = 1
-        
+
         # Spaceships - change the form and move
         ## Glider
         self.board[2, 13] = 1
@@ -48,7 +51,7 @@ class GameOfLife:
         Return total number of neighbours for a given cell coordinates on the board
         """
         total = (
-            0 
+            0
             # row above
             + b[(row - 1) % self.rows, (col - 1) % self.cols]
             + b[(row - 1) % self.rows, col]
@@ -86,21 +89,22 @@ class GameOfLife:
         self.iteration += 1
         self.board = new
 
+
 class StdoutRenderer:
     def __init__(self, gol: GameOfLife, speed: int = 3) -> None:
         self.gol = gol
         self.clear_cmd = "cls" if os.name == "nt" else "clear"
-        self.pause = 1.0 / speed
+        self.speed = speed
+        self.pause = 1.0 / self.speed
 
         np.set_printoptions(
-            threshold=np.inf,
-            linewidth=np.inf,
-            formatter={"float_kind": self.format_cell}
+            threshold=sys.maxsize,
+            linewidth=sys.maxsize,
+            formatter={"float_kind": self.format_cell},
         )
 
-    def format_cell(self, val: float) -> str:
-        """Format and colorize a single cell value
-        """
+    def format_cell(self, val: np.floating[typing.Any]) -> str:
+        """Format and colorize a single cell value"""
         if val > 0:
             color = colorama.Fore.CYAN
             value = "▓"
@@ -110,7 +114,6 @@ class StdoutRenderer:
 
         return f"{color}{value}"
 
-
     def clear_screen(self) -> None:
         """Clear terminal screen"""
         os.system(self.clear_cmd)
@@ -118,6 +121,8 @@ class StdoutRenderer:
     def output_board(self) -> None:
         # np.savetxt(sys.stdout, self.gol.board, fmt="%d")
         print(np.array2string(self.gol.board, separator=" "))
+        print("Board size: {}x{}".format(self.gol.rows, self.gol.cols))
+        print("Evolution pace: {} iter/s".format(self.speed))
         print("Iteration:", self.gol.iteration)
 
     def output_exit(self) -> None:
@@ -135,8 +140,15 @@ class StdoutRenderer:
             self.output_exit()
 
 
-if __name__ == "__main__":
-    g = GameOfLife()
+@click.command()
+@click.option("--size", default=30, help="Board size")
+@click.option("--speed", default=3, help="Iterations per second")
+def cli(size, speed):
+    g = GameOfLife(rows=size, cols=size)
     g.seed()
-    r = StdoutRenderer(gol=g)
+    r = StdoutRenderer(gol=g, speed=speed)
     r.render()
+
+
+if __name__ == "__main__":
+    cli()
