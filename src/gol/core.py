@@ -13,6 +13,7 @@ class GameOfLife:
         self.rows = rows
         self.cols = cols
         self.board: Board = np.zeros((self.rows, self.cols))
+        self.iteration = 0
 
     def seed(self) -> None:
         """Initialize some patterns
@@ -67,7 +68,8 @@ class GameOfLife:
 
         1. Any live cell with two or three live neighbours survives.
         2. Any dead cell with three live neighbours becomes a live cell.
-        3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+        3. All other live cells die in the next generation.
+        Similarly, all other dead cells stay dead.
         """
         prev = self.board
         new = np.copy(self.board)
@@ -75,12 +77,13 @@ class GameOfLife:
         for r in range(self.rows):
             for c in range(self.cols):
                 neighbours = self.count_neighbours(b=prev, row=r, col=c)
-                
+
                 if new[r, c] == 0 and neighbours == 3:
                     new[r, c] = 1
                 elif new[r, c] == 1 and ((neighbours < 2) or (neighbours > 3)):
                     new[r, c] = 0
-        
+
+        self.iteration += 1
         self.board = new
 
 class StdoutRenderer:
@@ -89,16 +92,48 @@ class StdoutRenderer:
         self.clear_cmd = "cls" if os.name == "nt" else "clear"
         self.pause = 1.0 / speed
 
-    def clear(self) -> None:
+        np.set_printoptions(
+            threshold=np.inf,
+            linewidth=np.inf,
+            formatter={"float_kind": self.format_cell}
+        )
+
+    def format_cell(self, val: float) -> str:
+        """Format and colorize a single cell value
+        """
+        if val > 0:
+            color = colorama.Fore.CYAN
+            value = "▓"
+        else:
+            color = colorama.Fore.YELLOW
+            value = "░"
+
+        return f"{color}{value}"
+
+
+    def clear_screen(self) -> None:
+        """Clear terminal screen"""
         os.system(self.clear_cmd)
 
+    def output_board(self) -> None:
+        # np.savetxt(sys.stdout, self.gol.board, fmt="%d")
+        print(np.array2string(self.gol.board, separator=" "))
+        print("Iteration:", self.gol.iteration)
+
+    def output_exit(self) -> None:
+        self.clear_screen()
+        print("Exit!")
+
     def render(self):
-        while True:
-            self.clear()
-            np.savetxt(sys.stdout, self.gol.board, fmt="%d")
-            self.gol.evolve()
-            time.sleep(self.pause)
-            
+        try:
+            while True:
+                self.clear_screen()
+                self.output_board()
+                self.gol.evolve()
+                time.sleep(self.pause)
+        except KeyboardInterrupt:
+            self.output_exit()
+
 
 if __name__ == "__main__":
     g = GameOfLife()
