@@ -1,0 +1,59 @@
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.3.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gol"
+description = "Conway's Game of Life"
+readme = "README.md"
+authors = [
+    {name = "Vitaly Samigullin", email = "vrs@pilosus.org"},
+]
+dynamic = ["version"]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: Apache Software License",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "Click>=8,<9",
+]
+
+[project.urls]
+"Source code" = "https://github.com/pilosus/gol"
+"Issue tracker" = "https://github.com/pilosus/gol/issues"
+
+[project.scripts]
+gol = "gol.cli:cli"
+
+[tool.setuptools_scm]
+write_to = "_version.py"
+
+[tool.isort]
+atomic = true
+line_length = 88
+skip_gitignore = true
+known_first_party = ["gol"]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+
+[tool.mypy]
+ignore_missing_imports = true
+follow_imports = "silent"
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_any_generics = true
+check_untyped_defs = true
+
+[tool.black]
+target-version = ["py37", "py38", "py39", "py310", "py311"]
+line-length = 88
+
+[tool.coverage.report]
+fail_under = 95
