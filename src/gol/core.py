@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import time
@@ -23,41 +24,46 @@ COLORS = {
 
 # Types
 Board = npt.NDArray[np.float64]
+File = io.TextIOWrapper
 
 
 class GameOfLife:
-    def __init__(self, rows: int = 30, cols: int = 30) -> None:
+    def __init__(self, seed: File, rows: int = 30, cols: int = 30) -> None:
+        self.seed = seed
         self.rows = rows
         self.cols = cols
         self.board: Board = np.zeros((self.rows, self.cols))
         self.iteration = 0
 
-    def seed(self) -> None:
-        """Initialize some patterns"""
+    def seed_board(self) -> None:
+        """Initialize the board with a seed"""
+        if self.seed:
+            self.board = np.loadtxt(self.seed)
+            self.rows, self.cols = self.board.shape
+        else:
+            # Still lifes - don't change over time
+            ## Block
+            self.board[1:3, 1:3] = 1
 
-        # Still lifes - don't change over time
-        ## Block
-        self.board[1:3, 1:3] = 1
+            ## Bee-hive
+            self.board[4, 2:4] = 1
+            self.board[5, 1] = 1
+            self.board[5, 4] = 1
+            self.board[6, 2:4] = 1
 
-        ## Bee-hive
-        self.board[4, 2:4] = 1
-        self.board[5, 1] = 1
-        self.board[5, 4] = 1
-        self.board[6, 2:4] = 1
+            # Oscillators - change the form, but don't move
+            ## Blinker
+            self.board[1:4, 7] = 1
 
-        # Oscillators - change the form, but don't move
-        ## Blinker
-        self.board[1:4, 7] = 1
+            ## Toad
+            self.board[7, 7:10] = 1
+            self.board[6, 8:11] = 1
 
-        ## Toad
-        self.board[7, 7:10] = 1
-        self.board[6, 8:11] = 1
-
-        # Spaceships - change the form and move
-        ## Glider
-        self.board[2, 13] = 1
-        self.board[3, 14] = 1
-        self.board[1:4, 15] = 1
+            # Spaceships - change the form and move
+            ## Glider
+            self.board[2, 13] = 1
+            self.board[3, 14] = 1
+            self.board[1:4, 15] = 1
 
     def count_neighbours(self, b: Board, row: int, col: int) -> int:
         """
@@ -133,15 +139,21 @@ class StdoutRenderer:
             color = self.color_dead
             value = "░"
 
-        return f"{color}{value}"
+        return f"{color}{value} "
 
     def clear_screen(self) -> None:
         """Clear terminal screen"""
         os.system(self.clear_cmd)
 
+    def output_array(self) -> None:
+        """Format and print np.array"""
+        for row in self.gol.board:
+            for element in row:
+                print(self.format_cell(element), end="")
+            print(end="\n")
+
     def output_board(self) -> None:
-        # np.savetxt(sys.stdout, self.gol.board, fmt="%d")
-        print(np.array2string(self.gol.board, separator=" "))
+        self.output_array()
         print("Board size: {}x{}".format(self.gol.rows, self.gol.cols))
         print("Evolution pace: {} iter/s".format(self.speed))
         print("Iteration:", self.gol.iteration)
@@ -162,23 +174,28 @@ class StdoutRenderer:
 
 
 @click.command()
+@click.option(
+    "--seed",
+    type=click.File(mode="r", encoding=None, errors="strict", lazy=None, atomic=False),
+    help="File with the board seed ('-' is a stdin)",
+)
 @click.option("--size", default=30, help="Board size")
 @click.option("--speed", default=3, help="Iterations per second")
 @click.option(
     "--color-live",
-    type=click.Choice(COLORS.keys(), case_sensitive=False),
+    type=click.Choice(list(COLORS), case_sensitive=False),
     default="cyan",
     help="Live cell color",
 )
 @click.option(
     "--color-dead",
-    type=click.Choice(COLORS.keys(), case_sensitive=False),
+    type=click.Choice(list(COLORS), case_sensitive=False),
     default="yellow",
     help="Dead cell color",
 )
-def cli(size, speed, color_live, color_dead):
-    g = GameOfLife(rows=size, cols=size)
-    g.seed()
+def cli(seed, size, speed, color_live, color_dead):
+    g = GameOfLife(seed=seed, rows=size, cols=size)
+    g.seed_board()
     r = StdoutRenderer(gol=g, speed=speed, color_live=color_live, color_dead=color_dead)
     r.render()
 
