@@ -8,6 +8,19 @@ import colorama
 import numpy as np
 import numpy.typing as npt
 
+# Const
+
+COLORS = {
+    "black": colorama.Fore.BLACK,
+    "blue": colorama.Fore.BLUE,
+    "cyan": colorama.Fore.CYAN,
+    "green": colorama.Fore.GREEN,
+    "magenta": colorama.Fore.MAGENTA,
+    "red": colorama.Fore.RED,
+    "white": colorama.Fore.WHITE,
+    "yellow": colorama.Fore.YELLOW,
+}
+
 # Types
 Board = npt.NDArray[np.float64]
 
@@ -91,11 +104,19 @@ class GameOfLife:
 
 
 class StdoutRenderer:
-    def __init__(self, gol: GameOfLife, speed: int = 3) -> None:
+    def __init__(
+        self,
+        gol: GameOfLife,
+        speed: int,
+        color_live: str,
+        color_dead: str,
+    ) -> None:
         self.gol = gol
         self.clear_cmd = "cls" if os.name == "nt" else "clear"
         self.speed = speed
         self.pause = 1.0 / self.speed
+        self.color_live = COLORS[color_live]
+        self.color_dead = COLORS[color_dead]
 
         np.set_printoptions(
             threshold=sys.maxsize,
@@ -106,10 +127,10 @@ class StdoutRenderer:
     def format_cell(self, val: np.floating[typing.Any]) -> str:
         """Format and colorize a single cell value"""
         if val > 0:
-            color = colorama.Fore.CYAN
+            color = self.color_live
             value = "▓"
         else:
-            color = colorama.Fore.YELLOW
+            color = self.color_dead
             value = "░"
 
         return f"{color}{value}"
@@ -143,10 +164,22 @@ class StdoutRenderer:
 @click.command()
 @click.option("--size", default=30, help="Board size")
 @click.option("--speed", default=3, help="Iterations per second")
-def cli(size, speed):
+@click.option(
+    "--color-live",
+    type=click.Choice(COLORS.keys(), case_sensitive=False),
+    default="cyan",
+    help="Live cell color",
+)
+@click.option(
+    "--color-dead",
+    type=click.Choice(COLORS.keys(), case_sensitive=False),
+    default="yellow",
+    help="Dead cell color",
+)
+def cli(size, speed, color_live, color_dead):
     g = GameOfLife(rows=size, cols=size)
     g.seed()
-    r = StdoutRenderer(gol=g, speed=speed)
+    r = StdoutRenderer(gol=g, speed=speed, color_live=color_live, color_dead=color_dead)
     r.render()
 
 
