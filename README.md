@@ -11,7 +11,7 @@ Current implementation differs in that:
 
 That makes the game fun and easy to experiment with.
 
-![screencast](https://blog.pilosus.org/images/gol.gif)
+![screencast](https://blog.pilosus.org/images/gol.webp)
 
 # Usage
 
